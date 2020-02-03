@@ -125,18 +125,16 @@ Version: {__version__}
                 call([u'git', u'pull'], env=dict(environ, GIT_DIR=join(args.org, repo.name, '.git').encode('utf8')))
                 repo_path = join(args.org, repo.name)
                 if path.exists(join(repo_path, 'library.properties')):
-                    if len(check_output('git --git-dir='+repo_path+'/.git' + ' --work-tree=' + repo_path + ' log --grep="Arduino code with astyle"',shell=True)) == 0:
-                        Arduino_lib_num = Arduino_lib_num + 1
-                        for f in fileEndWith(join(args.org, repo.name),'.cpp','.h','.ino'):
-                            # astyle -n --options=arduino_formatter.conf  /volume1/Github/Seeed-Studio/Grove_6Axis_Accelerometer_And_Compass_v2/LSM303D.cpp 
-                            call([u'astyle', u'-n',u'--options=/volume1/seeed/arduino_formatter.conf', f])
-                            print(f)
-                        print(repo_path)
-                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'add',u'--all'])
-                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'-m',u'Pretty printed the Arduino code with astyle'])
-                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'push',u'-u','origin','master'])
-                    else:
-                        print("It's optimized!!!!")
+                    Arduino_lib_num = Arduino_lib_num + 1
+                    for f in fileEndWith(join(args.org, repo.name),'.cpp','.h','.ino'):
+                        # astyle -n --options=arduino_formatter.conf  /volume1/Github/Seeed-Studio/Grove_6Axis_Accelerometer_And_Compass_v2/LSM303D.cpp 
+                        call([u'astyle', u'-n',u'--options=/volume1/seeed/arduino_formatter.conf', f])
+                        print(f)
+                    print(repo_path)
+                    call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'add',u'--all'])
+                    call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'--amend',u'--no-edit'])
+                    call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'push',u'-u',u'origin',u'master',u'-f'])
+
             else:
                 print(u'Already cloned, skipping...\t"{repo.full_name}"'.format(repo=repo))
         print(u'FIN',Arduino_lib_num)
