@@ -5,9 +5,10 @@ from __future__ import print_function
 from getpass import getpass
 from argparse import ArgumentParser
 from os import chdir, path, makedirs, pardir, environ
-from subprocess import call, Popen
+from subprocess import call, Popen,check_output
 from functools import partial
 from platform import python_version_tuple
+import os
 
 from github import Github
 
@@ -16,6 +17,28 @@ if python_version_tuple()[0] == u'2':
 
 __author__ = u'"Mustafa Hasturk"'
 __version__ = '2.1.0'
+
+def endWith(s, *endstring):
+    array = map(s.endswith, endstring)
+    if True in array:
+        return True
+    else:
+        return False
+
+
+def fileEndWith(p, *endstring):
+    all_file = []
+    wants_files = []
+
+    for r, d, f in os.walk(p):
+        if r.find('.git') == -1:
+            for item in f:
+                all_file.append(os.path.join(r, item))
+    for i in all_file:
+        if endWith(i, '.cpp', '.h', '.ino'):
+            wants_files.append(i)
+    return wants_files
+
 
 
 class Gitim():
@@ -75,7 +98,8 @@ Version: {__version__}
         g = self.make_github_agent(args)
         user = g.get_user().login
         # (BadCredentialsException, TwoFactorException, RateLimitExceededException)
-
+        
+        Arduino_lib_num = 0
         join = path.join
         if args.dest:
             if not path.exists(args.dest):
@@ -85,7 +109,8 @@ Version: {__version__}
 
         get_repos = g.get_organization(args.org).get_repos if args.org else g.get_user().get_repos
         for repo in get_repos():
-            if not path.exists(join(repo.name)):
+            if not path.exists(join(args.org, repo.name)):
+                print(join(args.org,repo.name))
                 clone_url = repo.clone_url
                 if args.ssh:
                     clone_url = repo.ssh_url
@@ -97,10 +122,24 @@ Version: {__version__}
                     call([u'git', u'clone', clone_url, join(repo.full_name)])
             elif not args.nopull:
                 print(u'Updating "{repo.name}"'.format(repo=repo))
-                call([u'git', u'pull'], env=dict(environ, GIT_DIR=join(repo.name, '.git').encode('utf8')))
+                call([u'git', u'pull'], env=dict(environ, GIT_DIR=join(args.org, repo.name, '.git').encode('utf8')))
+                repo_path = join(args.org, repo.name)
+                if path.exists(join(repo_path, 'library.properties')):
+                    if len(check_output('git --git-dir='+repo_path+'/.git' + ' --work-tree=' + repo_path + ' log --grep="Arduino code with astyle"',shell=True)) == 0:
+                        Arduino_lib_num = Arduino_lib_num + 1
+                        for f in fileEndWith(join(args.org, repo.name),'.cpp','.h','.ino'):
+                            # astyle -n --options=arduino_formatter.conf  /volume1/Github/Seeed-Studio/Grove_6Axis_Accelerometer_And_Compass_v2/LSM303D.cpp 
+                            call([u'astyle', u'-n',u'--options=/volume1/seeed/arduino_formatter.conf', f])
+                            print(f)
+                        print(repo_path)
+                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'add',u'--all'])
+                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'-m',u'Pretty printed the Arduino code with astyle'])
+                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'push',u'-u','origin','master'])
+                    else:
+                        print("It's optimized!!!!")
             else:
                 print(u'Already cloned, skipping...\t"{repo.full_name}"'.format(repo=repo))
-        print(u'FIN')
+        print(u'FIN',Arduino_lib_num)
 
 
 if __name__ == '__main__':
