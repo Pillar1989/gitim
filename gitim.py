@@ -9,6 +9,7 @@ from subprocess import call, Popen,check_output
 from functools import partial
 from platform import python_version_tuple
 import os
+import generate_ci
 
 from github import Github
 
@@ -125,18 +126,36 @@ Version: {__version__}
                 call([u'git', u'pull'], env=dict(environ, GIT_DIR=join(args.org, repo.name, '.git').encode('utf8')))
                 repo_path = join(args.org, repo.name)
                 if path.exists(join(repo_path, 'library.properties')):
-                    if len(check_output('git --git-dir='+repo_path+'/.git' + ' --work-tree=' + repo_path + ' log --grep="Arduino code with astyle"',shell=True)) == 0:
-                        Arduino_lib_num = Arduino_lib_num + 1
-                        for f in fileEndWith(join(args.org, repo.name),'.cpp','.h','.ino'):
-                            # astyle -n --options=arduino_formatter.conf  /volume1/Github/Seeed-Studio/Grove_6Axis_Accelerometer_And_Compass_v2/LSM303D.cpp 
-                            call([u'astyle', u'-n',u'--options=/volume1/seeed/arduino_formatter.conf', f])
-                            print(f)
-                        print(repo_path)
+                    Arduino_lib_num = Arduino_lib_num + 1
+                    if not path.exists(join(repo_path, '.travis.yml')):
+                        generate_ci.generate_yml(join(repo_path, '.travis.yml'),["arduino:avr:uno","Seeeduino:samd:seeed_XIAO_m0"], [])
                         call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'add',u'--all'])
-                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'-m',u'Pretty printed the Arduino code with astyle'])
+                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'-m',u'Seeed:Arduino: Add travis.yml'])
                         call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'push',u'-u','origin','master'])
                     else:
-                        print("It's optimized!!!!")
+                        readme_lines=[]
+                        do_git = True
+                        ci_status = "[![Build Status](https://travis-ci.com/Seeed-Studio/"+repo.name+".svg?branch=master)](https://travis-ci.com/Seeed-Studio/"+repo.name+")\n"
+                        if  path.exists(join(repo_path, 'README.md')):
+                            f_readme=open(join(repo_path, 'README.md'),'r') 
+                            for line in f_readme:
+                                readme_lines.append(line)
+                            f_readme.close()
+                            if readme_lines[0].find("Build Status") == -1:
+                                readme_lines[0] = readme_lines[0][:-1] + "  " + ci_status
+                                f_readme=open(join(repo_path, 'README.md'),'w') 
+                                f_readme.write("".join(readme_lines))
+                                f_readme.close()
+                            else:
+                                do_git = False
+                        else:
+                            f_readme=open(join(repo_path, 'README.md'),'w') 
+                            f_readme.write("# "+repo.name+"  "+ci_status)
+                            f_readme.close()
+                        if do_git == True:
+                            call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'add',u'--all'])
+                            call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'-m',u'Seeed:Arduino: Add travis build status'])
+                            call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'push',u'-u','origin','master'])                        
             else:
                 print(u'Already cloned, skipping...\t"{repo.full_name}"'.format(repo=repo))
         print(u'FIN',Arduino_lib_num)
