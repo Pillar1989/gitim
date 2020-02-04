@@ -62,7 +62,7 @@ notifications:
 
 def build_yml(board_stings, stretch_strings, repo_strings):
     env_str = "    - env:\n"
-    board_str = "        - BOARD = "
+    board_str = "        - BOARD="
     start_str = ""
     end_str = ""
 
@@ -82,7 +82,7 @@ def build_yml(board_stings, stretch_strings, repo_strings):
 
         print(end_str)
 
-    mid_str = "  - installLibrary Seeeed-Studio/" + repo_strings+"\n"
+    mid_str = "  - installLibrary Seeed-Studio/" + repo_strings+"\n"
     return start_str, mid_str, end_str
 
 
@@ -103,7 +103,8 @@ def generate_yml(yml_file, boards, not_repos):
         # 开始拼装
         start, mid, end = build_yml(boards, stretchs, repo_name)
         ff = open(yml_file, "w")
-        yml = include_yml + start + before_install_yml + mid +installLibrary_yml+ end + end_yml
+        yml = include_yml + start + before_install_yml + \
+            mid + installLibrary_yml + end + end_yml
         ff.write(yml)
         ff.close()
 

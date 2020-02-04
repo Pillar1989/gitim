@@ -127,35 +127,13 @@ Version: {__version__}
                 repo_path = join(args.org, repo.name)
                 if path.exists(join(repo_path, 'library.properties')):
                     Arduino_lib_num = Arduino_lib_num + 1
-                    if not path.exists(join(repo_path, '.travis.yml')):
+                    if  path.exists(join(repo_path, '.travis.yml')):
+                        call([u'rm',u'-rf',join(repo_path, '.travis.yml')])
                         generate_ci.generate_yml(join(repo_path, '.travis.yml'),["arduino:avr:uno","Seeeduino:samd:seeed_XIAO_m0"], [])
                         call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'add',u'--all'])
-                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'-m',u'Seeed:Arduino: Add travis.yml'])
-                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'push',u'-u','origin','master'])
-                    else:
-                        readme_lines=[]
-                        do_git = True
-                        ci_status = "[![Build Status](https://travis-ci.com/Seeed-Studio/"+repo.name+".svg?branch=master)](https://travis-ci.com/Seeed-Studio/"+repo.name+")\n"
-                        if  path.exists(join(repo_path, 'README.md')):
-                            f_readme=open(join(repo_path, 'README.md'),'r') 
-                            for line in f_readme:
-                                readme_lines.append(line)
-                            f_readme.close()
-                            if readme_lines[0].find("Build Status") == -1:
-                                readme_lines[0] = readme_lines[0][:-1] + "  " + ci_status
-                                f_readme=open(join(repo_path, 'README.md'),'w') 
-                                f_readme.write("".join(readme_lines))
-                                f_readme.close()
-                            else:
-                                do_git = False
-                        else:
-                            f_readme=open(join(repo_path, 'README.md'),'w') 
-                            f_readme.write("# "+repo.name+"  "+ci_status)
-                            f_readme.close()
-                        if do_git == True:
-                            call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'add',u'--all'])
-                            call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'-m',u'Seeed:Arduino: Add travis build status'])
-                            call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'push',u'-u','origin','master'])                        
+                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'commit',u'--amend',u'--no-edit'])
+                        call([u'git',u'--git-dir='+repo_path+'/.git',u'--work-tree='+repo_path, u'push',u'-f'])
+                     
             else:
                 print(u'Already cloned, skipping...\t"{repo.full_name}"'.format(repo=repo))
         print(u'FIN',Arduino_lib_num)
